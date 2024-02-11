@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "solmate/tokens/ERC721.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "solmate/tokens/ERC721.sol";
 
 error MintPriceNotPaid();
 error MaxSupply();
 error NonExistentTokenURI();
+error WithdrawTransfer();
 
-contract SolmateNft is ERC721 {
+contract SolmateNft is ERC721, Ownable {
     using String for uint256;
 
     string public baseURI;
@@ -46,5 +48,13 @@ contract SolmateNft is ERC721 {
             bytes(baseURI).length > 0
                 ? string(abi.encodePacked(baseURI, tokenId.toString()))
                 : "";
+    }
+
+    function withdrawPayments(address payable payee) external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool transferTx, ) = payee.call{value: balance}("");
+        if (!transferTx) {
+            revert WithdrawTransfer();
+        }
     }
 }
